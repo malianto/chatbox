@@ -1,5 +1,5 @@
 import { ChatboxAILicenseDetail, ChatboxAIModel, Message, MessageRole } from 'src/shared/types'
-import Base, { onResultChange } from './base'
+import ProxyBase from './proxyBase'
 import { API_ORIGIN } from '../remote'
 import { BaseError, ApiError, NetworkError, ChatboxAIAPIError } from './errors'
 import { parseJsonOrEmpty } from '@/lib/utils'
@@ -21,7 +21,7 @@ interface Config {
     uuid: string
 }
 
-export default class ChatboxAI extends Base {
+export default class ChatboxAI extends ProxyBase {
     public name = 'ChatboxAI'
 
     public options: Options
@@ -34,8 +34,9 @@ export default class ChatboxAI extends Base {
 
     async callChatCompletion(rawMessages: Message[], signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
         const messages = await populateChatboxAIMessage(rawMessages)
-        const response = await this.post(
-            `${API_ORIGIN}/api/ai/chat`,
+        const targetUri = `${API_ORIGIN}/api/ai/chat`
+        const response = await this.proxyPost(
+            targetUri,
             this.getHeaders(),
             {
                 uuid: this.config.uuid,

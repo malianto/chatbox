@@ -1,6 +1,6 @@
 import { Message } from 'src/shared/types'
 import { ApiError, ChatboxAIAPIError } from './errors'
-import Base, { onResultChange } from './base'
+import ProxyBase from './proxyBase'
 
 interface Options {
     openaiKey: string
@@ -12,7 +12,7 @@ interface Options {
     topP: number
 }
 
-export default class OpenAI extends Base {
+export default class OpenAI extends ProxyBase {
     public name = 'OpenAI'
 
     public options: Options
@@ -68,8 +68,9 @@ export default class OpenAI extends Base {
 
     async requestChatCompletionsStream(requestBody: Record<string, any>, signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
         const apiPath = this.options.apiPath || '/v1/chat/completions'
-        const response = await this.post(
-            `${this.options.apiHost}${apiPath}`,
+        const targetUri = `${this.options.apiHost}${apiPath}`
+        const response = await this.proxyPost(
+            targetUri,
             this.getHeaders(),
             requestBody,
             signal
@@ -96,8 +97,9 @@ export default class OpenAI extends Base {
 
     async requestChatCompletionsNotStream(requestBody: Record<string, any>, signal?: AbortSignal, onResultChange?: onResultChange): Promise<string> {
         const apiPath = this.options.apiPath || '/v1/chat/completions'
-        const response = await this.post(
-            `${this.options.apiHost}${apiPath}`,
+        const targetUri = `${this.options.apiHost}${apiPath}`
+        const response = await this.proxyPost(
+            targetUri,
             this.getHeaders(),
             requestBody,
             signal
@@ -117,10 +119,6 @@ export default class OpenAI extends Base {
         const headers: Record<string, string> = {
             Authorization: `Bearer ${this.options.openaiKey}`,
             'Content-Type': 'application/json',
-        }
-        if (this.options.apiHost.includes('openrouter.ai')) {
-            headers['HTTP-Referer'] = 'https://chatboxai.app'
-            headers['X-Title'] = 'Chatbox AI'
         }
         return headers
     }

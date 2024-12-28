@@ -1,6 +1,6 @@
 import { Message } from 'src/shared/types'
 import { ApiError, ChatboxAIAPIError } from './errors'
-import Base, { onResultChange } from './base'
+import ProxyBase from './proxyBase'
 
 interface Options {
     siliconCloudKey: string
@@ -12,7 +12,7 @@ interface Options {
     topP: number
 }
 
-export default class SiliconFlow extends Base {
+export default class SiliconFlow extends ProxyBase {
     public name = 'SiliconFlow'
 
     public options: Options
@@ -54,8 +54,9 @@ export default class SiliconFlow extends Base {
         messages = injectModelSystemPrompt(model, messages)
 
         const apiPath = this.options.apiPath || '/v1/chat/completions'
-        const response = await this.post(
-            `${this.options.apiHost}${apiPath}`,
+        const targetUri = `${this.options.apiHost}${apiPath}`
+        const response = await this.proxyPost(
+            targetUri,
             this.getHeaders(),
             {
                 messages,
