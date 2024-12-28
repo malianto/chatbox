@@ -3,6 +3,8 @@
   <a href="./doc/README-CN.md">简体中文</a>
 </p>
 
+> **⚠️ Web Support Notice**: The web application support is currently in Proof of Concept (POC) stage. It is provided AS-IS without any warranties. Use at your own risk.
+
 This is the repository for the Chatbox Community Edition, open-sourced under the GPLv3 license. For most users, I recommend using the Chatbox Official Edition (closed-source). It's still completely free, easy to install, and supports more of the latest features. You can get it below:
 
 ### Download for Desktop
@@ -207,6 +209,30 @@ Any form of contribution is welcome, including but not limited to:
 
 ## Build Instructions
 
+### Web Application
+#### Prerequisites
+- Docker and Docker Compose installed on your system
+- At least 2GB of free RAM for development build
+- Port 1212 available on your machine
+
+#### Steps
+1. Clone the repository from Github
+```bash
+git clone https://github.com/malianto/chatbox-web chatbox
+cd chatbox
+```
+
+2. Build and start the application
+```bash 
+docker compose up --build
+```
+
+3. Done!
+Visit your web app at http://localhost:1212
+
+> Note: The first build might take several minutes as it needs to download and install all dependencies. Subsequent builds will be faster thanks to Docker layer caching.
+
+### Standalone Application
 1. Clone the repository from Github
 
 ```bash
