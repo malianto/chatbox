@@ -30,7 +30,15 @@ export function modify(update: Session) {
     store.set(atoms.sessionsAtom, (sessions) =>
         sessions.map((s) => {
             if (s.id === update.id) {
-                return update
+                return {
+                    ...s,
+                    ...update,
+                    aiProvider: update.aiProvider,
+                    model: update.model,
+                    temperature: update.temperature,
+                    topP: update.topP,
+                    maxTokens: update.maxTokens,
+                }
             }
             return s
         })
@@ -180,12 +188,23 @@ export async function generate(sessionId: string, targetMsg: Message) {
         return
     }
     const placeholder = '...'
+
+    // Use session settings if they exist, otherwise fall back to global settings
+    const effectiveSettings = {
+        ...settings,
+        aiProvider: session.aiProvider ?? settings.aiProvider,
+        model: session.model ?? settings.model,
+        temperature: session.temperature ?? settings.temperature,
+        topP: session.topP ?? settings.topP,
+        maxTokens: session.maxTokens ?? settings.maxTokens,
+    }
+
     targetMsg = {
         ...targetMsg,
         content: placeholder,
         cancel: undefined,
-        aiProvider: settings.aiProvider,
-        model: getModelDisplayName(settings, session.type || 'chat'),
+        aiProvider: effectiveSettings.aiProvider,
+        model: getModelDisplayName(effectiveSettings, session.type || 'chat'),
         generating: true,
         errorCode: undefined,
         error: undefined,
@@ -197,11 +216,11 @@ export async function generate(sessionId: string, targetMsg: Message) {
     let targetMsgIx = messages.findIndex((m) => m.id === targetMsg.id)
 
     try {
-        const model = getModel(settings, configs)
+        const model = getModel(effectiveSettings, configs)
         switch (session.type) {
             case 'chat':
             case undefined:
-                const promptMsgs = genMessageContext(settings, messages.slice(0, targetMsgIx))
+                const promptMsgs = genMessageContext(effectiveSettings, messages.slice(0, targetMsgIx), session)
                 const throttledModifyMessage = throttle(({ text, cancel }: { text: string, cancel: () => void }) => {
                     targetMsg = { ...targetMsg, content: text, cancel }
                     modifyMessage(sessionId, targetMsg)
@@ -237,11 +256,11 @@ export async function generate(sessionId: string, targetMsg: Message) {
             errorCode,
             error: `${err.message}`,
             errorExtra: {
-                aiProvider: settings.aiProvider,
+                aiProvider: effectiveSettings.aiProvider,
                 host: err['host'],
             },
         }
-        modifyMessage(sessionId, targetMsg, true)
+        modifyMessage(sessionId, targetMsg)
     }
 }
 
@@ -276,26 +295,29 @@ export async function generateName(sessionId: string) {
     return _generateName(sessionId, modifyName)
 }
 
-function genMessageContext(settings: Settings, msgs: Message[]) {
-    const {
-        openaiMaxContextMessageCount
-    } = settings
-    if (msgs.length === 0) {
-        throw new Error('No messages to replay')
-    }
-    const head = msgs[0].role === 'system' ? msgs[0] : undefined
-    if (head) {
-        msgs = msgs.slice(1)
-    }
-    let totalLen = head ? estimateTokensFromMessages([head]) : 0
+export function genMessageContext(settings: Settings, msgs: Message[], session?: Session) {
     let prompts: Message[] = []
-    for (let i = msgs.length - 1; i >= 0; i--) {
+    let totalLen = 0
+    const head = msgs[0]
+    let openaiMaxContextMessageCount = settings.openaiMaxContextMessageCount || defaults.settings().openaiMaxContextMessageCount
+    // Use session settings if available, otherwise fall back to global settings
+    const effectiveSettings = session ? {
+        ...settings,
+        aiProvider: session.aiProvider ?? settings.aiProvider,
+        model: session.model ?? settings.model,
+        temperature: session.temperature ?? settings.temperature,
+        topP: session.topP ?? settings.topP,
+        maxTokens: session.maxTokens ?? settings.maxTokens,
+    } : settings
+
+    for (let i = msgs.length - 1; i >= 1; i--) {
         const msg = msgs[i]
         if (msg.error || msg.errorCode) {
             continue
         }
         const size = estimateTokensFromMessages([msg]) + 20 // 20 is a rough estimation of the overhead of the prompt
-        if (settings.aiProvider === 'openai') {
+        if (effectiveSettings.aiProvider === 'openai') {
+            // Handle OpenAI specific logic
         }
         if (
             openaiMaxContextMessageCount <= 20 &&
@@ -326,6 +348,15 @@ export function initEmptyChatSession(): Session {
                 content: settings.defaultPrompt || defaults.getDefaultPrompt(),
             },
         ],
+        aiProvider: settings.aiProvider,
+        model: settings.model,
+        openaiCustomModel: settings.openaiCustomModel,
+        chatboxAIModel: settings.chatboxAIModel,
+        ollamaModel: settings.ollamaModel,
+        siliconCloudModel: settings.siliconCloudModel,
+        temperature: settings.temperature,
+        topP: settings.topP,
+        maxTokens: settings.maxTokens,
     }
 }
 

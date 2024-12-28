@@ -50,6 +50,19 @@ export interface Session {
     picUrl?: string
     messages: Message[]
     copilotId?: string
+
+    // Model settings (optional for backward compatibility)
+    aiProvider?: ModelProvider
+    model?: string
+    openaiCustomModel?: string
+    chatboxAIModel?: ChatboxAIModel
+    ollamaModel?: string
+    siliconCloudModel?: string
+    
+    // Model parameters
+    temperature?: number
+    topP?: number
+    maxTokens?: number
 }
 
 export function createMessage(role: MessageRole = MessageRoleEnum.User, content: string = ''): Message {

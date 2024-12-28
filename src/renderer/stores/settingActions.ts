@@ -2,13 +2,32 @@ import { getDefaultStore } from 'jotai'
 import * as atoms from './atoms'
 import * as defaults from '../../shared/defaults'
 import { Settings } from '../../shared/types'
+import * as sessionActions from './sessionActions'
 
 export function modify(update: Partial<Settings>) {
     const store = getDefaultStore()
+    
+    // Update global settings
     store.set(atoms.settingsAtom, (settings) => ({
         ...settings,
         ...update,
     }))
+
+    // Create a new session with updated settings if needed
+    if (update.aiProvider || update.model) {
+        const currentSession = sessionActions.getCurrentSession()
+        if (currentSession && currentSession.messages.length <= 1) {
+            // Only update empty sessions (with just system message)
+            sessionActions.modify({
+                ...currentSession,
+                aiProvider: update.aiProvider,
+                model: update.model,
+                temperature: update.temperature,
+                topP: update.topP,
+                maxTokens: update.maxTokens,
+            })
+        }
+    }
 }
 
 export function needEditSetting() {
