@@ -3,6 +3,7 @@ import { Config, Settings } from "src/shared/types"
 import { getOS } from './navigator'
 import { parseLocale } from '@/i18n/parser'
 import Exporter from './exporter'
+import { WebPlatform } from './platform.web'
 
 export class DesktopPlatform {
     public ipc: ElectronIPC
@@ -49,10 +50,21 @@ export class DesktopPlatform {
     }
 
     public async getConfig(): Promise<Config> {
-        return this.ipc.invoke('getConfig')
+        const configStr = await this.ipc.invoke('getConfig')
+        return JSON.parse(configStr)
     }
+
+    public async setConfig(config: Config): Promise<void> {
+        return this.ipc.invoke('setConfig', JSON.stringify(config))
+    }
+
     public async getSettings(): Promise<Settings> {
-        return this.ipc.invoke('getSettings')
+        const settingsStr = await this.ipc.invoke('getSettings')
+        return JSON.parse(settingsStr)
+    }
+
+    public async setSettings(settings: Settings): Promise<void> {
+        return this.ipc.invoke('setSettings', JSON.stringify(settings))
     }
 
     public async setStoreValue(key: string, value: any) {
@@ -90,4 +102,6 @@ export class DesktopPlatform {
     }
 }
 
-export default new DesktopPlatform(window.electronAPI as any)
+// Determine which platform to use based on environment
+const isWeb = process.env.CHATBOX_BUILD_TARGET === 'web'
+export default isWeb ? new WebPlatform() : new DesktopPlatform(window.electronAPI as any)

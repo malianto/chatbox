@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "1212:1212"
+    volumes:
+      - ./src:/app/src
+      - ./assets:/app/assets
+      - ./.erb:/app/.erb
+    environment:
+      - PORT=1212
+      - HOST=0.0.0.0
+      - NODE_ENV=development
+      - CHATBOX_BUILD_TARGET=web
+      - CHATBOX_BUILD_PLATFORM=web
+    command: cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.web.dev.ts
