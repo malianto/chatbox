@@ -105,6 +105,7 @@ export default class Claude extends Base {
             url,
             {
                 'Content-Type': 'application/json',
+                'anthropic-dangerous-direct-browser-access': 'true',
                 'anthropic-version': '2023-06-01',
                 'x-api-key': this.options.claudeApiKey,
                 ...extraHeaders,
